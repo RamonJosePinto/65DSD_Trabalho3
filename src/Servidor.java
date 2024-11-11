@@ -1,13 +1,16 @@
 import java.net.*;
 import java.io.*;
+import java.util.Map;
 
 public class Servidor extends Thread {
     private Processo processo;
     private int porta;
+    private Map<Integer, String> idParaIp;
 
-    public Servidor(Processo processo, int porta) {
+    public Servidor(Processo processo, int porta, Map<Integer, String> idParaIp) {
         this.processo = processo;
         this.porta = porta;
+        this.idParaIp = idParaIp;
     }
 
     public void run() {
@@ -31,18 +34,26 @@ public class Servidor extends Thread {
 
         switch (tipo) {
             case "ELEICAO":
-                Cliente.enviarMensagemResposta(idRemetente, processo.getId());
-                if (!processo.isCoordenador()) {
+                // Enviar resposta para o remetente usando seu IP
+                String ipRemetente = idParaIp.get(idRemetente);
+                if (ipRemetente != null) {
+                    Cliente.enviarMensagemResposta(ipRemetente, idRemetente, processo.getId());
+                } else {
+                    System.err.println("IP do remetente não encontrado para ID: " + idRemetente);
+                }
+
+                // Inicia uma nova eleição se ainda não estiver em andamento
+                if (!processo.isCoordenador() && !processo.isEleicaoEmAndamento()) {
                     processo.iniciarEleicao();
                 }
                 break;
             case "RESPOSTA":
                 System.out.println("Processo " + processo.getId() + " recebeu resposta de " + idRemetente);
+                processo.setRespostaRecebida(true); // Configura que uma resposta foi recebida
                 break;
             case "COORDENADOR":
-                processo.setIdCoordenadorAtual(idRemetente);
                 processo.setCoordenador(idRemetente == processo.getId());
-                System.out.println("Novo coordenador é o processo " + idRemetente);
+                System.out.println("Processo " + processo.getId() + " reconhece " + idRemetente + " como novo coordenador.");
                 break;
         }
     }

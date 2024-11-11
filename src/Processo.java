@@ -1,126 +1,93 @@
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Processo {
     private int id;
-    private AtomicBoolean coordenador;
+    private AtomicBoolean isCoordenador;
     private int idCoordenadorAtual;
-//    private List<Integer> outrosProcessos; // IDs dos outros processos
-    private List<Integer> idsMaisAltos;
-    private static final long TEMPO_LIMITE_MS = 2000; // Tempo T
-    private static final long TEMPO_ESPERA_COORD_MS = 1000; // Tempo T' para esperar coordenador
+    private Map<Integer, String> idParaIp;
+    private static final long TEMPO_LIMITE = 2000; // Tempo limite para esperar respostas
+    private AtomicBoolean respostaRecebida;
+    private AtomicBoolean eleicaoEmAndamento;
 
-    public Processo(int id, List<Integer> todosProcessos) {
+    public Processo(int id, Map<Integer, String> idParaIp) {
         this.id = id;
-//        this.outrosProcessos = outrosProcessos;
-        this.idsMaisAltos = new ArrayList<>();
-
-        // Armazenar apenas os IDs mais altos
-        for (int outroId : todosProcessos) {
-            if (outroId > this.id) {
-                idsMaisAltos.add(outroId);
-            }
-        }
-        this.coordenador = new AtomicBoolean(false);
+        this.isCoordenador = new AtomicBoolean(false);
+        this.idParaIp = idParaIp;
+        this.respostaRecebida = new AtomicBoolean(false);
+        this.eleicaoEmAndamento = new AtomicBoolean(false);
     }
 
     public int getId() {
         return id;
     }
 
-    public List<Integer> getIdsMaisAltos() {
-        return idsMaisAltos;
-    }
-
     public boolean isCoordenador() {
-        return coordenador.get();
+        return isCoordenador.get();
     }
 
     public void setCoordenador(boolean coordenador) {
-        this.coordenador.set(coordenador);
+        this.isCoordenador.set(coordenador);
     }
 
-    public void setIdCoordenadorAtual(int id) {
-        this.idCoordenadorAtual = id;
-    }
-
-    public int getIdCoordenadorAtual() {
-        return idCoordenadorAtual;
+    public boolean isEleicaoEmAndamento() {
+        return eleicaoEmAndamento.get();
     }
 
     public void iniciarEleicao() {
+        if (eleicaoEmAndamento.get()) {
+            return; // Se já houver uma eleição em andamento, ignore
+        }
+
+        eleicaoEmAndamento.set(true); // Marca que a eleição está em andamento
         System.out.println("Processo " + id + " está iniciando uma eleição...");
-        boolean recebeuResposta = false;
+        respostaRecebida.set(false);
 
-        // Envia mensagens de eleição para processos com identificadores mais altos
-        for (int outroProcessoId : idsMaisAltos) {
-            if (outroProcessoId > this.id) {
-                Cliente.enviarMensagemEleicao(outroProcessoId, this.id);
+        // Envia mensagens de eleição apenas para IDs maiores
+        for (int outroId : idParaIp.keySet()) {
+            if (outroId > this.id) {
+                Cliente.enviarMensagemEleicao(idParaIp.get(outroId), outroId, this.id);
 
-                // Aguarda uma resposta dentro do tempo limite T
-                recebeuResposta = aguardarResposta(outroProcessoId);
-
-                if (recebeuResposta) {
-                    System.out.println("Processo " + id + " recebeu resposta de " + outroProcessoId);
-                    break;
+                // Aguarda resposta de cada ID maior individualmente
+                if (aguardarResposta()) {
+                    System.out.println("Processo " + id + " recebeu resposta de " + outroId + " e aguardará o coordenador.");
+                    eleicaoEmAndamento.set(false); // Libera a eleição em andamento
+                    return; // Sai da eleição se receber uma resposta
                 }
             }
         }
 
-        if (!recebeuResposta) {
-            System.out.println("Processo " + id + " não recebeu respostas. Aguardando mensagem de coordenador...");
+        // Se não recebeu resposta de nenhum ID maior, torna-se coordenador
+        System.out.println("Processo " + id + " não recebeu respostas. Se declara coordenador.");
+        setCoordenador(true);
+        idCoordenadorAtual = id;
 
-            // Aguarda a chegada da mensagem de coordenador por T' (TEMPO_ESPERA_COORD_MS)
-            boolean recebeuCoordenador = aguardarMensagemCoordenador();
-
-            if (!recebeuCoordenador) {
-                System.out.println("Processo " + id + " não recebeu mensagem de coordenador. Iniciando nova eleição.");
-                iniciarEleicao();
+        // Envia mensagem de coordenador para IDs menores
+        for (int outroId : idParaIp.keySet()) {
+            if (outroId < id) {
+                Cliente.enviarMensagemCoordenador(idParaIp.get(outroId), outroId, id);
             }
         }
+
+        eleicaoEmAndamento.set(false); // Libera a eleição em andamento ao final
     }
 
-
-    private boolean aguardarResposta(int outroProcessoId) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<Boolean> futuro = executor.submit(() -> {
-            // Implementação para verificar se uma resposta é recebida
-            // Esta é uma simulação, então podemos implementar conforme as mensagens reais chegarem
-            Thread.sleep(TEMPO_LIMITE_MS); // Espera o tempo limite T
-            return false; // Retorna falso se o tempo limite foi alcançado sem resposta
-        });
-
-        try {
-            return futuro.get(TEMPO_LIMITE_MS, TimeUnit.MILLISECONDS);
-        } catch (TimeoutException e) {
-            System.out.println("Processo " + id + " não recebeu resposta de " + outroProcessoId + " no tempo limite.");
-            return false;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        } finally {
-            executor.shutdown();
+    private boolean aguardarResposta() {
+        long inicio = System.currentTimeMillis();
+        while ((System.currentTimeMillis() - inicio) < TEMPO_LIMITE) {
+            if (respostaRecebida.get()) {
+                return true; // Retorna verdadeiro se uma resposta for recebida dentro do limite
+            }
+            try {
+                Thread.sleep(100); // Aguardar um pouco antes de verificar novamente
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+        return false; // Retorna falso se não receber resposta no tempo limite
     }
 
-    private boolean aguardarMensagemCoordenador() {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<Boolean> futuro = executor.submit(() -> {
-            Thread.sleep(TEMPO_ESPERA_COORD_MS); // Espera o tempo T'
-            return false; // Simulação, retorna falso se o tempo T' é alcançado sem mensagem de coordenador
-        });
-
-        try {
-            return futuro.get(TEMPO_ESPERA_COORD_MS, TimeUnit.MILLISECONDS);
-        } catch (TimeoutException e) {
-            System.out.println("Processo " + id + " não recebeu mensagem de coordenador no tempo limite.");
-            return false;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        } finally {
-            executor.shutdown();
-        }
+    public void setRespostaRecebida(boolean valor) {
+        respostaRecebida.set(valor);
     }
 }
