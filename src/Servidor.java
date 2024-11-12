@@ -43,7 +43,7 @@ public class Servidor extends Thread {
                 }
 
                 // Inicia uma nova eleição se ainda não estiver em andamento
-                if (!processo.isCoordenador() && !processo.isEleicaoEmAndamento()) {
+                if (/*!processo.isCoordenador() &&*/ !processo.isEleicaoEmAndamento()) {
                     processo.iniciarEleicao();
                 }
                 break;

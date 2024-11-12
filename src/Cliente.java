@@ -20,7 +20,7 @@ public class Cliente {
     }
 
     private static void enviarMensagem(String ipDestino, int idDestino, String mensagem) {
-        try (Socket socket = new Socket(ipDestino, 82);
+        try (Socket socket = new Socket(ipDestino, 80 + idDestino);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
             out.println(mensagem);
         } catch (IOException e) {
