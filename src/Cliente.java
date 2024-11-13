@@ -23,8 +23,9 @@ public class Cliente {
         try (Socket socket = new Socket(ipDestino, 80 + idDestino);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
             out.println(mensagem);
+            processo.setRespostaRecebida(true);
         } catch (IOException e) {
-            System.err.println("Erro ao enviar mensagem para " + ipDestino + ": " + e.getMessage());
+            System.err.println("Sem resposta do processo " + idDestino + ": " + e.getMessage());
             processo.setRespostaRecebida(false);
         }
     }

@@ -10,11 +10,11 @@ public class Main {
 //        List<Integer> todosIds = Arrays.asList(1, 2, 3, 4, 5); // IDs de processos predefinidos
 
         Map<Integer, String> idParaIp = new HashMap<>();
-        idParaIp.put(1, "192.168.56.1"); // IP da máquina do processo 1
-        idParaIp.put(2, "192.168.56.1");  // IP da máquina do processo 2
-        idParaIp.put(3, "192.168.56.1");  // Exemplo de IP para o processo 3
-        idParaIp.put(4, "192.168.56.1");  // Exemplo de IP para o processo 4
-        idParaIp.put(5, "192.168.56.1");  // Exemplo de IP para o processo 5
+        idParaIp.put(1, "172.27.96.1"); // IP da máquina do processo 1
+        idParaIp.put(2, "172.27.96.1");  // IP da máquina do processo 2
+        idParaIp.put(3, "172.27.96.1");  // Exemplo de IP para o processo 3
+        idParaIp.put(4, "172.27.96.1");  // Exemplo de IP para o processo 4
+        idParaIp.put(5, "172.27.96.1");  // Exemplo de IP para o processo 5
 
 
         // Filtra os IDs maiores para o processo corrente

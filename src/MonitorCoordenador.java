@@ -13,7 +13,7 @@ public class MonitorCoordenador extends Thread {
     @Override
     public void run() {
         while (true) {
-            if (!processo.isCoordenador() && processo.getIdCoordenadorAtual() > 0) {
+            if (!processo.isCoordenador() && processo.getIdCoordenadorAtual() > 0 && !processo.isEleicaoEmAndamento()) {
                 try {
                     // Envia um ping para o coordenador
                     String ipCoordenador = idParaIp.get(processo.getIdCoordenadorAtual());
