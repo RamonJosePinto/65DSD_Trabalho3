@@ -44,57 +44,81 @@ public class Processo {
     }
 
     public void iniciarEleicao() {
+        if (isEleicaoEmAndamento()) {
+            return; // Ignora se já há uma eleição em andamento
+        }
 
-            if (eleicaoEmAndamento) {
-                return; // Se já houver uma eleição em andamento, ignore
-            }
-            setEleicaoEmAndamento(true); // Marca que a eleição está em andamento
-
-
+        setEleicaoEmAndamento(true);
         System.out.println("Processo " + id + " está iniciando uma eleição...");
         setRespostaRecebida(false);
 
-        // Envia mensagens de eleição apenas para IDs maiores
+        boolean houveResposta = enviarMensagensEleicaoParaIdsMaiores();
+
+        if (houveResposta && !aguardarCoordenador()) {
+            System.out.println("Processo " + id + " não recebeu mensagem de coordenador. Iniciando nova eleição.");
+            reiniciarEleicao();
+            return;
+        }
+
+        if (!houveResposta) {
+            proclamarCoordenador();
+        }
+
+        setEleicaoEmAndamento(false);
+    }
+
+    private boolean enviarMensagensEleicaoParaIdsMaiores() {
+        boolean houveResposta = false;
+
         for (int outroId : idParaIp.keySet()) {
             if (outroId > this.id) {
                 Cliente.enviarMensagemEleicao(idParaIp.get(outroId), outroId, this.id, this);
-
-                // Aguarda resposta de cada ID maior individualmente
                 if (aguardarResposta()) {
                     System.out.println("Processo " + id + " recebeu resposta de " + outroId + " e aguardará o coordenador.");
-
-                    // Aguardar a mensagem do coordenador com o tempo extra T'
-                    if (!aguardarMensagemCoordenador()) {
-                        System.out.println("Processo " + id + " não recebeu mensagem de coordenador. Iniciando nova eleição.");
-                        setEleicaoEmAndamento(false);
-                        iniciarEleicao(); // Reinicia eleição caso o coordenador não responda
-                        return;
-                    }
-                   setEleicaoEmAndamento(false);
-                    return; // Sai da eleição após aguardar o coordenador
+                    houveResposta = true;
+                    break;
                 }
             }
         }
+        return houveResposta;
+    }
 
-        // Se não recebeu resposta de nenhum ID maior, torna-se coordenador
-        lock.lock();
+
+    private boolean aguardarCoordenador() {
+        esperar(TEMPO_AGUARDA_COORDENADOR);
+        return getRespostaRecebida(); // Verifica se houve resposta após o tempo T'
+    }
+
+    private void reiniciarEleicao() {
+        setEleicaoEmAndamento(false);
+        iniciarEleicao();
+    }
+
+    private void proclamarCoordenador() {
+        System.out.println("Processo " + id + " não recebeu respostas. Se declara coordenador.");
+        setCoordenador(true);
+        idCoordenadorAtual = id;
+        notificarProcessosMenores();
+    }
+
+    private void notificarProcessosMenores() {
+        for (int outroId : idParaIp.keySet()) {
+            if (outroId < id) {
+                Cliente.enviarMensagemCoordenador(idParaIp.get(outroId), outroId, id, this);
+            }
+        }
+    }
+
+    private void esperar(long tempo) {
         try {
-            if (!respostaRecebida) {
-                System.out.println("Processo " + id + " não recebeu respostas. Se declara coordenador.");
-                setCoordenador(true);
-                idCoordenadorAtual = id;
-
-                // Envia mensagem de coordenador para IDs menores
-                for (int outroId : idParaIp.keySet()) {
-                    if (outroId < id) {
-                        Cliente.enviarMensagemCoordenador(idParaIp.get(outroId), outroId, id, this);
-                    }
-                }
-            }
-           setEleicaoEmAndamento(false);
-        } finally {
-            lock.unlock();
+            Thread.sleep(tempo);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
+    }
+
+    public synchronized boolean getRespostaRecebida() {
+        return respostaRecebida;
     }
 
     public boolean aguardarResposta() {
