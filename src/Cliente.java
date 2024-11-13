@@ -7,24 +7,29 @@ import java.net.*;
 
 public class Cliente {
 
-    public static void enviarMensagemEleicao(String ipDestino, int idDestino, int idRemetente) {
-        enviarMensagem(ipDestino, idDestino, "ELEICAO:" + idRemetente);
+    public static void enviarMensagemEleicao(String ipDestino, int idDestino, int idRemetente, Processo process) {
+        enviarMensagem(ipDestino, idDestino, "ELEICAO:" + idRemetente, process);
     }
 
-    public static void enviarMensagemResposta(String ipDestino, int idDestino, int idRemetente) {
-        enviarMensagem(ipDestino, idDestino, "RESPOSTA:" + idRemetente);
+    public static void enviarMensagemResposta(String ipDestino, int idDestino, int idRemetente, Processo process) {
+        enviarMensagem(ipDestino, idDestino, "RESPOSTA:" + idRemetente, process);
     }
 
-    public static void enviarMensagemCoordenador(String ipDestino, int idDestino, int idCoordenador) {
-        enviarMensagem(ipDestino, idDestino, "COORDENADOR:" + idCoordenador);
+    public static void enviarMensagemCoordenador(String ipDestino, int idDestino, int idCoordenador, Processo process) {
+        enviarMensagem(ipDestino, idDestino, "COORDENADOR:" + idCoordenador, process);
     }
 
-    private static void enviarMensagem(String ipDestino, int idDestino, String mensagem) {
+    private static void enviarMensagem(String ipDestino, int idDestino, String mensagem, Processo processo) {
         try (Socket socket = new Socket(ipDestino, 80 + idDestino);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
             out.println(mensagem);
         } catch (IOException e) {
             System.err.println("Erro ao enviar mensagem para " + ipDestino + ": " + e.getMessage());
+            processo.setRespostaRecebida(false);
         }
+    }
+
+    public static void enviarMensagemPing(String ipDestino, int idDestino, int idRemetente, Processo processo) {
+        enviarMensagem(ipDestino, idDestino, "PING:" + idRemetente, processo);
     }
 }

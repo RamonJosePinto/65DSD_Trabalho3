@@ -31,13 +31,13 @@ public class Servidor extends Thread {
         String[] partes = mensagem.split(":");
         String tipo = partes[0];
         int idRemetente = Integer.parseInt(partes[1]);
+        String ipRemetente = idParaIp.get(idRemetente);
 
         switch (tipo) {
             case "ELEICAO":
                 // Enviar resposta para o remetente usando seu IP
-                String ipRemetente = idParaIp.get(idRemetente);
                 if (ipRemetente != null) {
-                    Cliente.enviarMensagemResposta(ipRemetente, idRemetente, processo.getId());
+                    Cliente.enviarMensagemResposta(ipRemetente, idRemetente, processo.getId(), processo);
                 } else {
                     System.err.println("IP do remetente não encontrado para ID: " + idRemetente);
                 }
@@ -53,7 +53,13 @@ public class Servidor extends Thread {
                 break;
             case "COORDENADOR":
                 processo.setCoordenador(idRemetente == processo.getId());
+                processo.setIdCoordenadorAtual(idRemetente);
+                processo.setEleicaoEmAndamento(false);
                 System.out.println("Processo " + processo.getId() + " reconhece " + idRemetente + " como novo coordenador.");
+                break;
+            case "PING":
+                // Envia uma resposta de ping ao remetente
+                Cliente.enviarMensagemResposta(ipRemetente, idRemetente, processo.getId(), processo);
                 break;
         }
     }
