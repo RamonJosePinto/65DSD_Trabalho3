@@ -29,7 +29,7 @@ public class MonitorCoordenador extends Thread {
                 }
             }
             try {
-                Thread.sleep(INTERVALO_PING); // Espera entre pings
+                Thread.sleep(INTERVALO_PING);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

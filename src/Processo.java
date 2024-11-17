@@ -1,5 +1,4 @@
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -9,10 +8,9 @@ public class Processo {
     private int idCoordenadorAtual;
     private Map<Integer, String> idParaIp;
     private static final long TEMPO_LIMITE = 2000; // Tempo limite para esperar respostas
-    private static final long TEMPO_AGUARDA_COORDENADOR = 7000; // Tempo extra para aguardar mensagem de coordenador
+    private static final long TEMPO_AGUARDA_COORDENADOR = 10000; // Tempo para aguardar mensagem de coordenador
     private boolean respostaRecebida;
     private boolean eleicaoEmAndamento;
-    private final Lock lock = new ReentrantLock();
 
     public Processo(int id, Map<Integer, String> idParaIp) {
         this.id = id;
@@ -35,17 +33,12 @@ public class Processo {
     }
 
     public boolean isEleicaoEmAndamento() {
-        lock.lock();
-        try {
-            return eleicaoEmAndamento;
-        } finally {
-            lock.unlock();
-        }
+        return eleicaoEmAndamento;
     }
 
     public void iniciarEleicao() {
         if (isEleicaoEmAndamento()) {
-            return; // Ignora se já há uma eleição em andamento
+            return;
         }
 
         setEleicaoEmAndamento(true);
@@ -86,7 +79,7 @@ public class Processo {
 
     private boolean aguardarCoordenador() {
         esperar(TEMPO_AGUARDA_COORDENADOR);
-        return getRespostaRecebida(); // Verifica se houve resposta após o tempo T'
+        return getRespostaRecebida();
     }
 
     private void reiniciarEleicao() {
@@ -117,34 +110,25 @@ public class Processo {
         }
     }
 
-    public synchronized boolean getRespostaRecebida() {
-        return respostaRecebida;
-    }
-
     public boolean aguardarResposta() {
         long inicio = System.currentTimeMillis();
         while ((System.currentTimeMillis() - inicio) < TEMPO_LIMITE) {
 
                 if (respostaRecebida) {
-                    return true; // Retorna verdadeiro se uma resposta for recebida dentro do limite
+                    return true;
                 }
 
             try {
-                Thread.sleep(100); // Aguardar um pouco antes de verificar novamente
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        return false; // Retorna falso se não receber resposta no tempo limite
+        return false;
     }
 
-    private boolean aguardarMensagemCoordenador() {
-        try {
-            Thread.sleep(TEMPO_AGUARDA_COORDENADOR);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return respostaRecebida; // Verifica se houve resposta após o tempo T'
+    public synchronized boolean getRespostaRecebida() {
+        return respostaRecebida;
     }
 
     public void setRespostaRecebida(boolean respostaRecebida) {
@@ -152,21 +136,11 @@ public class Processo {
     }
 
     public int getIdCoordenadorAtual() {
-        lock.lock();
-        try {
-            return idCoordenadorAtual;
-        } finally {
-            lock.unlock();
-        }
+        return idCoordenadorAtual;
     }
 
     public void setIdCoordenadorAtual(int idCoordenadorAtual) {
-        lock.lock();
-        try {
-            this.idCoordenadorAtual = idCoordenadorAtual;
-        } finally {
-            lock.unlock();
-        }
+        this.idCoordenadorAtual = idCoordenadorAtual;
     }
 
     public boolean getEleicaoEmAndamento() {

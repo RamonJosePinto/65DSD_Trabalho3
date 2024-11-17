@@ -35,21 +35,19 @@ public class Servidor extends Thread {
 
         switch (tipo) {
             case "ELEICAO":
-                // Enviar resposta para o remetente usando seu IP
                 if (ipRemetente != null) {
                     Cliente.enviarMensagemResposta(ipRemetente, idRemetente, processo.getId(), processo);
                 } else {
                     System.err.println("IP do remetente não encontrado para ID: " + idRemetente);
                 }
 
-                // Inicia uma nova eleição se ainda não estiver em andamento
-                if (/*!processo.isCoordenador() &&*/ !processo.isEleicaoEmAndamento()) {
+                if (!processo.isEleicaoEmAndamento()) {
                     processo.iniciarEleicao();
                 }
                 break;
             case "RESPOSTA":
                 System.out.println("Processo " + processo.getId() + " recebeu resposta de " + idRemetente);
-                processo.setRespostaRecebida(true); // Configura que uma resposta foi recebida
+                processo.setRespostaRecebida(true);
                 break;
             case "COORDENADOR":
                 processo.setCoordenador(idRemetente == processo.getId());
@@ -58,7 +56,6 @@ public class Servidor extends Thread {
                 System.out.println("Processo " + processo.getId() + " reconhece " + idRemetente + " como novo coordenador.");
                 break;
             case "PING":
-                // Envia uma resposta de ping ao remetente
                 Cliente.enviarMensagemResposta(ipRemetente, idRemetente, processo.getId(), processo);
                 break;
         }
