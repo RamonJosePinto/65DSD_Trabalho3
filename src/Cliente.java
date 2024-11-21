@@ -19,6 +19,10 @@ public class Cliente {
         enviarMensagem(ipDestino, idDestino, "COORDENADOR:" + idCoordenador, process);
     }
 
+    public static void enviarMensagemPing(String ipDestino, int idDestino, int idRemetente, Processo processo) {
+        enviarMensagem(ipDestino, idDestino, "PING:" + idRemetente, processo);
+    }
+
     private static void enviarMensagem(String ipDestino, int idDestino, String mensagem, Processo processo) {
         try (Socket socket = new Socket(ipDestino, 80 + idDestino);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
@@ -28,9 +32,5 @@ public class Cliente {
             System.err.println("Sem resposta do processo " + idDestino + ": " + e.getMessage());
             processo.setRespostaRecebida(false);
         }
-    }
-
-    public static void enviarMensagemPing(String ipDestino, int idDestino, int idRemetente, Processo processo) {
-        enviarMensagem(ipDestino, idDestino, "PING:" + idRemetente, processo);
     }
 }

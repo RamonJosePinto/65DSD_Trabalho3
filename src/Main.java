@@ -25,15 +25,6 @@ public class Main {
             System.err.println("Erro na execução do processo: " + e.getMessage());
         }
 
-
-        // Filtra os IDs maiores para o processo corrente
-        List<Integer> idsMaiores = new ArrayList<>();
-        for (int outroId : idParaIp.keySet()) {
-            if (outroId > id) {
-                idsMaiores.add(outroId);
-            }
-        }
-
         Processo processo = new Processo(id, idParaIp);
         new Servidor(processo, 80 + id, idParaIp).start();
 
@@ -55,8 +46,8 @@ public class Main {
         try (BufferedReader reader = new BufferedReader(new FileReader(caminhoArquivo))) {
             String linha;
             while ((linha = reader.readLine()) != null) {
-                if (linha.trim().isEmpty() || linha.startsWith("#")) continue; // Ignorar linhas vazias ou comentários
-                String[] partes = linha.split("\\s+"); // Divide por espaços em branco
+                if (linha.trim().isEmpty() || linha.startsWith("#")) continue;
+                String[] partes = linha.split("\\s+");
                 int id = Integer.parseInt(partes[0].trim());
                 String ip = partes[1].trim();
                 idParaIp.put(id, ip);
